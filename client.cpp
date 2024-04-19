@@ -23,7 +23,7 @@ string caesarEncrypt(const string& text, int s) {
 }
 
 string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s);  // Decrypt is reverse of encrypt
+    return caesarEncrypt(text, 26 - s);  
 }
 
 void receiveMessages(SOCKET sock) {
@@ -60,7 +60,22 @@ void sendMessage(SOCKET sock) {
     }
 }
 
+bool authenticate() {
+    string username, password;
+    cout << "Enter username: ";
+    getline(cin, username);
+    cout << "Enter password: ";
+    getline(cin, password);
+
+    return username == "admin" && password == "123";
+}
+
 int main() {
+    if (!authenticate()) {
+        cout << "Invalid credentials, please restart th program" << endl;
+        return 1;
+    }
+
     WSADATA WSAData;
     SOCKET sock;
     SOCKADDR_IN serverAddr;

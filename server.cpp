@@ -24,7 +24,7 @@ string caesarEncrypt(const string& text, int s) {
 }
 
 string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s);  // Decrypt is reverse of encrypt
+    return caesarEncrypt(text, 26 - s); 
 }
 
 void broadcastToClient(const string& message) {
