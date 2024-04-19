@@ -8,14 +8,33 @@
 
 using namespace std;
 
+int shift = 3;  // Shift for Caesar cipher
+
+string caesarEncrypt(const string& text, int s) {
+    string result = "";
+    for (auto c : text) {
+        if (isalpha(c)) {
+            char base = islower(c) ? 'a' : 'A';
+            c = (c - base + s) % 26 + base;
+        }
+        result += c;
+    }
+    return result;
+}
+
+string caesarDecrypt(const string& text, int s) {
+    return caesarEncrypt(text, 26 - s);  // Decrypt is reverse of encrypt
+}
+
 void receiveMessages(SOCKET sock) {
     char buffer[1024];
     int result;
     while (true) {
-        result = recv(sock, buffer, sizeof(buffer), 0);
+        result = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (result > 0) {
-            buffer[result] = '\0'; // Null-terminate the buffer
-            cout << buffer << endl;  // Display the message directly
+            buffer[result] = '\0';
+            string decrypted = caesarDecrypt(buffer, shift);
+            cout << decrypted << endl;
         } else if (result == 0) {
             cout << "Server disconnected." << endl;
             break;
@@ -31,11 +50,13 @@ void sendMessage(SOCKET sock) {
     while (true) {
         getline(cin, input);
         if (input == "#exit") {
-            send(sock, input.c_str(), input.size() + 1, 0); // Send exit command to the server
+            string encrypted = caesarEncrypt(input, shift);
+            send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
             cout << "Disconnecting from server..." << endl;
             break;
         }
-        send(sock, input.c_str(), input.size() + 1, 0);
+        string encrypted = caesarEncrypt(input, shift);
+        send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
     }
 }
 
@@ -47,7 +68,6 @@ int main() {
     int port = 1500;
 
     WSAStartup(MAKEWORD(2, 2), &WSAData);
-
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         cout << "Socket creation failed with error: " << WSAGetLastError() << endl;
@@ -70,8 +90,8 @@ int main() {
     thread receiveThread(receiveMessages, sock);
     thread sendThread(sendMessage, sock);
 
-    sendThread.join(); // Wait for the send thread to finish on user request to exit
-    receiveThread.detach(); // Detach the receive thread since it might be blocking on recv()
+    sendThread.join();
+    receiveThread.detach();
 
     closesocket(sock);
     WSACleanup();
