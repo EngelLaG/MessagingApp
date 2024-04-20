@@ -1,6 +1,7 @@
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <fstream>
 #include <string>
 #include <thread>
 
@@ -9,6 +10,10 @@
 using namespace std;
 
 int shift = 3;  // Shift for Caesar cipher
+
+// Function declarations
+void receiveMessages(SOCKET sock);
+void sendMessage(SOCKET sock);
 
 string caesarEncrypt(const string& text, int s) {
     string result = "";
@@ -23,7 +28,7 @@ string caesarEncrypt(const string& text, int s) {
 }
 
 string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s);  
+    return caesarEncrypt(text, 26 - s);
 }
 
 void receiveMessages(SOCKET sock) {
@@ -60,19 +65,75 @@ void sendMessage(SOCKET sock) {
     }
 }
 
+bool registerAccount() {
+    string username, password, line, userInFile;
+    cout << "Enter new username: ";
+    getline(cin, username);
+    cout << "Enter new password: ";
+    getline(cin, password);
+
+    ifstream check("accounts.txt");
+    while (getline(check, line)) {
+        size_t pos = line.find(' ');
+        if (pos != string::npos) {
+            userInFile = line.substr(0, pos);
+            if (userInFile == username) {
+                cout << "Username already exists. Please try logging in." << endl;
+                check.close();
+                return false;
+            }
+        }
+    }
+    check.close();
+
+    ofstream file("accounts.txt", ios::app);
+    if (!file.is_open()) {
+        cout << "Failed to open accounts file." << endl;
+        return false;
+    }
+    file << username << " " << caesarEncrypt(password, shift) << endl;
+    file.close();
+    return true;
+}
+
 bool authenticate() {
-    string username, password;
+    string username, password, line, userInFile, passInFile;
     cout << "Enter username: ";
     getline(cin, username);
     cout << "Enter password: ";
     getline(cin, password);
 
-    return username == "admin" && password == "123";
+    ifstream file("accounts.txt");
+    while (getline(file, line)) {
+        size_t pos = line.find(' ');
+        if (pos != string::npos) {
+            userInFile = line.substr(0, pos);
+            passInFile = line.substr(pos + 1);
+            if (userInFile == username && caesarDecrypt(passInFile, shift) == password) {
+                file.close();
+                return true;
+            }
+        }
+    }
+    file.close();
+    cout << "Invalid username or password." << endl;
+    return false;
 }
 
 int main() {
+    cout << "1. Register\n2. Login\nChoose option: ";
+    string option;
+    getline(cin, option);
+
+    if (option == "1") {
+        if (!registerAccount()) {
+            cout << "Registration failed." << endl;
+            return 1;
+        }
+        cout << "Registration successful. Please login." << endl;
+    }
+
     if (!authenticate()) {
-        cout << "Invalid credentials, please restart th program" << endl;
         return 1;
     }
 
@@ -100,6 +161,7 @@ int main() {
         WSACleanup();
         return 1;
     }
+
     cout << "Connected to server! Type #exit to disconnect." << endl;
 
     thread receiveThread(receiveMessages, sock);
