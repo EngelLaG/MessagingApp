@@ -5,39 +5,42 @@
 #include <string>
 #include <thread>
 
-#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Ws2_32.lib")  // Link with Ws2_32.lib
 
 using namespace std;
 
 int shift = 3;  // Shift for Caesar cipher
 
-// Function declarations
+
 void receiveMessages(SOCKET sock);
 void sendMessage(SOCKET sock);
 
+// Encrypts text using a Caesar cipher
 string caesarEncrypt(const string& text, int s) {
     string result = "";
     for (auto c : text) {
         if (isalpha(c)) {
             char base = islower(c) ? 'a' : 'A';
-            c = (c - base + s) % 26 + base;
+            c = (c - base + s) % 26 + base;  // Encrypt character
         }
         result += c;
     }
     return result;
 }
 
+// Decrypts text using a Caesar cipher
 string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s);
+    return caesarEncrypt(text, 26 - s); 
 }
 
+// Thread function to receive messages from the server
 void receiveMessages(SOCKET sock) {
     char buffer[1024];
     int result;
     while (true) {
         result = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (result > 0) {
-            buffer[result] = '\0';
+            buffer[result] = '\0';  // Null-terminate string
             string decrypted = caesarDecrypt(buffer, shift);
             cout << decrypted << endl;
         } else if (result == 0) {
@@ -50,6 +53,7 @@ void receiveMessages(SOCKET sock) {
     }
 }
 
+// Thread function to send messages to the server
 void sendMessage(SOCKET sock) {
     string input;
     while (true) {
@@ -65,6 +69,7 @@ void sendMessage(SOCKET sock) {
     }
 }
 
+// Registers a new account by writing to a file
 bool registerAccount() {
     string username, password, line, userInFile;
     cout << "Enter new username: ";
@@ -96,6 +101,7 @@ bool registerAccount() {
     return true;
 }
 
+// Authenticates a user against entries in a file
 bool authenticate() {
     string username, password, line, userInFile, passInFile;
     cout << "Enter username: ";
@@ -120,6 +126,7 @@ bool authenticate() {
     return false;
 }
 
+// Main function: sets up connection and threads
 int main() {
     cout << "1. Register\n2. Login\nChoose option: ";
     string option;
@@ -143,8 +150,8 @@ int main() {
     const char* ip = "127.0.0.1";
     int port = 1500;
 
-    WSAStartup(MAKEWORD(2, 2), &WSAData);
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    WSAStartup(MAKEWORD(2, 2), &WSAData);  // Initialize Winsock
+    sock = socket(AF_INET, SOCK_STREAM, 0);  // Create socket
     if (sock == INVALID_SOCKET) {
         cout << "Socket creation failed with error: " << WSAGetLastError() << endl;
         WSACleanup();
