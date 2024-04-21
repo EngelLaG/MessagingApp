@@ -9,28 +9,18 @@
 
 using namespace std;
 
-int shift = 3;  // Shift for Caesar cipher
-
+char key = 'K';  // Hard-coded key for XOR encryption
 
 void receiveMessages(SOCKET sock);
 void sendMessage(SOCKET sock);
 
-// Encrypts text using a Caesar cipher
-string caesarEncrypt(const string& text, int s) {
-    string result = "";
-    for (auto c : text) {
-        if (isalpha(c)) {
-            char base = islower(c) ? 'a' : 'A';
-            c = (c - base + s) % 26 + base;  // Encrypt character
-        }
-        result += c;
+// Encrypts or decrypts text using XOR cipher
+string xorEncryptDecrypt(const string& text, char key) {
+    string result = text;
+    for (size_t i = 0; i < text.size(); ++i) {
+        result[i] ^= key;
     }
     return result;
-}
-
-// Decrypts text using a Caesar cipher
-string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s); 
 }
 
 // Thread function to receive messages from the server
@@ -41,7 +31,7 @@ void receiveMessages(SOCKET sock) {
         result = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (result > 0) {
             buffer[result] = '\0';  // Null-terminate string
-            string decrypted = caesarDecrypt(buffer, shift);
+            string decrypted = xorEncryptDecrypt(buffer, key);
             cout << decrypted << endl;
         } else if (result == 0) {
             cout << "Server disconnected." << endl;
@@ -59,12 +49,12 @@ void sendMessage(SOCKET sock) {
     while (true) {
         getline(cin, input);
         if (input == "#exit") {
-            string encrypted = caesarEncrypt(input, shift);
+            string encrypted = xorEncryptDecrypt(input, key);
             send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
-            cout << "Disconnecting from server..." << endl;
+            cout << "Disconnecting from server" << endl;
             break;
         }
-        string encrypted = caesarEncrypt(input, shift);
+        string encrypted = xorEncryptDecrypt(input, key);
         send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
     }
 }
@@ -96,7 +86,7 @@ bool registerAccount() {
         cout << "Failed to open accounts file." << endl;
         return false;
     }
-    file << username << " " << caesarEncrypt(password, shift) << endl;
+    file << username << " " << xorEncryptDecrypt(password, key) << endl;
     file.close();
     return true;
 }
@@ -115,7 +105,7 @@ bool authenticate() {
         if (pos != string::npos) {
             userInFile = line.substr(0, pos);
             passInFile = line.substr(pos + 1);
-            if (userInFile == username && caesarDecrypt(passInFile, shift) == password) {
+            if (userInFile == username && xorEncryptDecrypt(passInFile, key) == password) {
                 file.close();
                 return true;
             }

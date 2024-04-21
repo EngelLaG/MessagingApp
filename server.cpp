@@ -8,32 +8,23 @@
 
 using namespace std;
 
-// Global variable to store the client socket
-SOCKET clientSocket = INVALID_SOCKET;
-int shift = 3;  // Shift for Caesar cipher
+// Global variables
+SOCKET clientSocket = INVALID_SOCKET;  // Global client socket
+char key = 'K';  // Hard-coded key for XOR encryption
 
-// Encrypts text using a Caesar cipher
-string caesarEncrypt(const string& text, int s) {
-    string result = "";
-    for (auto c : text) {
-        if (isalpha(c)) {  
-            char base = islower(c) ? 'a' : 'A';  
-            c = (c - base + s) % 26 + base;  
-        }
-        result += c;  
+// Encrypts or decrypts text using XOR cipher
+string xorEncryptDecrypt(const string& text, char key) {
+    string result = text;
+    for (size_t i = 0; i < text.size(); ++i) {
+        result[i] ^= key;  // Perform XOR with the key
     }
     return result;
-}
-
-// Decrypts text using a Caesar cipher
-string caesarDecrypt(const string& text, int s) {
-    return caesarEncrypt(text, 26 - s); 
 }
 
 // Sends an encrypted message to the client
 void broadcastToClient(const string& message) {
     if (clientSocket != INVALID_SOCKET) {
-        string encrypted = caesarEncrypt(message, shift);
+        string encrypted = xorEncryptDecrypt(message, key);
         send(clientSocket, encrypted.c_str(), encrypted.length(), 0);
     }
 }
@@ -45,10 +36,9 @@ void clientHandler() {
 
     while (true) {
         result = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-        buffer[result] = '\0';  // Ensure the string is null-terminated
-
         if (result > 0) {
-            string decrypted = caesarDecrypt(buffer, shift);
+            buffer[result] = '\0';  // Ensure the string is null-terminated
+            string decrypted = xorEncryptDecrypt(string(buffer), key);
             cout << "Client says: " << decrypted << endl;
         } else if (result == 0) {
             cout << "Client disconnected." << endl;
