@@ -5,20 +5,17 @@
 #include <string>
 #include <thread>
 
-#pragma comment(lib, "Ws2_32.lib")  // Link with Ws2_32.lib
+#pragma comment(lib, "Ws2_32.lib")  // Link with the Windows Socket library
 
 using namespace std;
 
 char key = 'K';  // Hard-coded key for XOR encryption
 
-void receiveMessages(SOCKET sock);
-void sendMessage(SOCKET sock);
-
 // Encrypts or decrypts text using XOR cipher
 string xorEncryptDecrypt(const string& text, char key) {
     string result = text;
     for (size_t i = 0; i < text.size(); ++i) {
-        result[i] ^= key;
+        result[i] ^= key;  // Perform XOR with the key
     }
     return result;
 }
@@ -30,7 +27,7 @@ void receiveMessages(SOCKET sock) {
     while (true) {
         result = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (result > 0) {
-            buffer[result] = '\0';  // Null-terminate string
+            buffer[result] = '\0';  // Null-terminate the string
             string decrypted = xorEncryptDecrypt(buffer, key);
             cout << decrypted << endl;
         } else if (result == 0) {
@@ -51,7 +48,7 @@ void sendMessage(SOCKET sock) {
         if (input == "#exit") {
             string encrypted = xorEncryptDecrypt(input, key);
             send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
-            cout << "Disconnecting from server" << endl;
+            cout << "Disconnecting from server..." << endl;
             break;
         }
         string encrypted = xorEncryptDecrypt(input, key);
@@ -61,18 +58,22 @@ void sendMessage(SOCKET sock) {
 
 // Registers a new account by writing to a file
 bool registerAccount() {
-    string username, password, line, userInFile;
+    string username, password, line, encryptedUser, encryptedPass;
     cout << "Enter new username: ";
     getline(cin, username);
     cout << "Enter new password: ";
     getline(cin, password);
 
+    encryptedUser = xorEncryptDecrypt(username, key);
+    encryptedPass = xorEncryptDecrypt(password, key);
+
     ifstream check("accounts.txt");
     while (getline(check, line)) {
         size_t pos = line.find(' ');
         if (pos != string::npos) {
-            userInFile = line.substr(0, pos);
-            if (userInFile == username) {
+            string storedUser = line.substr(0, pos);
+            storedUser = xorEncryptDecrypt(storedUser, key);
+            if (storedUser == username) {
                 cout << "Username already exists. Please try logging in." << endl;
                 check.close();
                 return false;
@@ -86,26 +87,29 @@ bool registerAccount() {
         cout << "Failed to open accounts file." << endl;
         return false;
     }
-    file << username << " " << xorEncryptDecrypt(password, key) << endl;
+    file << encryptedUser << " " << encryptedPass << endl;
     file.close();
     return true;
 }
 
 // Authenticates a user against entries in a file
 bool authenticate() {
-    string username, password, line, userInFile, passInFile;
+    string username, password, line, encryptedUser, encryptedPass;
     cout << "Enter username: ";
     getline(cin, username);
     cout << "Enter password: ";
     getline(cin, password);
 
+    encryptedUser = xorEncryptDecrypt(username, key);
+    encryptedPass = xorEncryptDecrypt(password, key);
+
     ifstream file("accounts.txt");
     while (getline(file, line)) {
         size_t pos = line.find(' ');
         if (pos != string::npos) {
-            userInFile = line.substr(0, pos);
-            passInFile = line.substr(pos + 1);
-            if (userInFile == username && xorEncryptDecrypt(passInFile, key) == password) {
+            string storedUser = line.substr(0, pos);
+            string storedPass = line.substr(pos + 1);
+            if (storedUser == encryptedUser && storedPass == encryptedPass) {
                 file.close();
                 return true;
             }
@@ -140,8 +144,8 @@ int main() {
     const char* ip = "127.0.0.1";
     int port = 1500;
 
-    WSAStartup(MAKEWORD(2, 2), &WSAData);  // Initialize Winsock
-    sock = socket(AF_INET, SOCK_STREAM, 0);  // Create socket
+    WSAStartup(MAKEWORD(2, 2), &WSAData);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         cout << "Socket creation failed with error: " << WSAGetLastError() << endl;
         WSACleanup();
@@ -164,8 +168,8 @@ int main() {
     thread receiveThread(receiveMessages, sock);
     thread sendThread(sendMessage, sock);
 
-    sendThread.join();
-    receiveThread.detach();
+    sendThread.join();  // Wait for send thread to finish
+    receiveThread.detach();  // Detach receive thread
 
     closesocket(sock);
     WSACleanup();
