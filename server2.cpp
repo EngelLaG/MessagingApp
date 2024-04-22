@@ -21,6 +21,16 @@ string xorEncryptDecrypt(const string& text, char key) {
     return result;
 }
 
+// Broadcasts messages from one client to another
+void broadcastMessage(const string& message, int senderIndex) {
+    for (int i = 0; i < 2; ++i) {
+        if (i != senderIndex && clientSockets[i] != INVALID_SOCKET) {
+            string encrypted = xorEncryptDecrypt(message, key);
+            send(clientSockets[i], encrypted.c_str(), encrypted.length(), 0);
+        }
+    }
+}
+
 // Handles incoming messages from a specific client
 void clientHandler(SOCKET clientSocket, int clientIndex) {
     char buffer[1024];
@@ -32,6 +42,9 @@ void clientHandler(SOCKET clientSocket, int clientIndex) {
             buffer[result] = '\0';  // Ensure the string is null-terminated
             string decrypted = xorEncryptDecrypt(string(buffer), key);
             cout << "Client " << clientIndex + 1 << " says: " << decrypted << endl;
+
+            // Broadcast message to the other client
+            broadcastMessage("Client " + to_string(clientIndex + 1) + " says: " + decrypted, clientIndex);
         } else if (result == 0) {
             cout << "Client " << clientIndex + 1 << " disconnected." << endl;
             break;
