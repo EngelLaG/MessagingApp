@@ -48,7 +48,7 @@ void sendMessage(SOCKET sock) {
         if (input == "#exit") {
             string encrypted = xorEncryptDecrypt(input, key);
             send(sock, encrypted.c_str(), encrypted.size() + 1, 0);
-            cout << "Disconnecting from server..." << endl;
+            cout << "Disconnecting from server" << endl;
             break;
         }
         string encrypted = xorEncryptDecrypt(input, key);

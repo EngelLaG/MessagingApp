@@ -96,7 +96,7 @@ int main() {
     }
 
     listen(serverSocket, 1);  // Listen for incoming connections
-    cout << "Listening for incoming connections..." << endl;
+    cout << "Listening for incoming connections" << endl;
 
     // Accept a client socket
     clientSocket = accept(serverSocket, NULL, NULL);

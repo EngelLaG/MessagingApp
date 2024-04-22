@@ -86,7 +86,7 @@ int main() {
     }
 
     listen(serverSocket, 2);  // Listen for up to 2 incoming connections
-    cout << "Listening for incoming connections..." << endl;
+    cout << "Listening for incoming connections" << endl;
 
     int clientCount = 0;
     while (clientCount < 2) {
