@@ -69,7 +69,7 @@ void serverInputHandler() {
 
 // Main function to set up the server
 int main() {
-    WSADATA WSAData;
+    WSADATA WSAData; //An object to store details of the Winsock implementation
     SOCKET serverSocket;
     SOCKADDR_IN serverAddr;
     int port = 1500;  // Server port
